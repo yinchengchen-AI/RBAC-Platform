@@ -81,7 +81,7 @@ function normalizeMenus(menus: MenuItem[]): AntdMenuItem[] {
 
   const sortNodes = (nodes: MenuNode[]): AntdMenuItem[] => {
     nodes.sort((a, b) => a.sort - b.sort)
-    return nodes.map(({ sort, parentId, children, ...rest }) => {
+    return nodes.map(({ children, ...rest }) => {
       const normalizedChildren = sortNodes(children)
       return normalizedChildren.length ? { ...rest, children: normalizedChildren } : rest
     })

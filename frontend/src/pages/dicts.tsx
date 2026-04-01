@@ -39,6 +39,7 @@ export function DictsPage() {
 
   useEffect(() => {
     void loadTypes()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadItems = async (dictCode: string) => {
