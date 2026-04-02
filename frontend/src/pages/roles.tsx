@@ -19,6 +19,7 @@ import { fetchDepartmentsApi, type DepartmentItem } from '../api/departments'
 import { fetchPermissionsApi } from '../api/permissions'
 import { createRoleApi, deleteRoleApi, fetchRolesApi, updateRoleApi } from '../api/roles'
 import { PageTitle } from '../components/page-title'
+import { useAuthStore } from '../store/auth'
 import type { PermissionItem, RoleItem } from '../types'
 
 interface RoleFormValues {
@@ -46,6 +47,7 @@ const dataScopeLabels: Record<string, string> = {
 }
 
 export function RolesPage() {
+  const refreshCurrentUser = useAuthStore((state) => state.refreshCurrentUser)
   const [data, setData] = useState<RoleItem[]>([])
   const [permissions, setPermissions] = useState<PermissionItem[]>([])
   const [departments, setDepartments] = useState<DepartmentItem[]>([])
@@ -132,6 +134,7 @@ export function RolesPage() {
       setOpen(false)
       form.resetFields()
       await loadData()
+      await refreshCurrentUser()
     } finally {
       setSubmitting(false)
     }
@@ -237,6 +240,7 @@ export function RolesPage() {
                       await deleteRoleApi(record.id)
                       message.success('角色删除成功')
                       await loadData()
+                      await refreshCurrentUser()
                     }}
                   >
                     <Button type="text" danger size="small" icon={<DeleteOutlined />}>

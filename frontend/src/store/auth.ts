@@ -9,6 +9,7 @@ interface AuthState {
   setCurrentUser: (user: CurrentUser | null) => void
   login: (payload: LoginPayload) => Promise<void>
   loadMe: () => Promise<void>
+  refreshCurrentUser: () => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -53,6 +54,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     } finally {
       set({ loading: false })
     }
+  },
+  refreshCurrentUser: async () => {
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      set({ currentUser: null })
+      return
+    }
+    const response = await fetchMeApi()
+    localStorage.setItem('current_user', JSON.stringify(response.data.data))
+    set({ currentUser: response.data.data })
   },
   logout: async () => {
     try {

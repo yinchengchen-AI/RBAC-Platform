@@ -491,19 +491,21 @@ export function ContractsPage() {
           </Form.Item>
           
           <Form.Item label="上传附件">
-            <Upload
-              multiple
-              fileList={fileList}
-              beforeUpload={(file) => {
-                setFileList((prev) => [...prev, file])
-                return false
-              }}
-              onRemove={(file) => {
-                setFileList((prev) => prev.filter((f) => f.uid !== file.uid))
-              }}
-            >
-              <Button icon={<PaperClipOutlined />}>选择文件</Button>
-            </Upload>
+            <Permission permission="business:contract:update">
+              <Upload
+                multiple
+                fileList={fileList}
+                beforeUpload={(file) => {
+                  setFileList((prev) => [...prev, file])
+                  return false
+                }}
+                onRemove={(file) => {
+                  setFileList((prev) => prev.filter((f) => f.uid !== file.uid))
+                }}
+              >
+                <Button icon={<PaperClipOutlined />}>选择文件</Button>
+              </Upload>
+            </Permission>
             <div style={{ color: '#8c8c8c', fontSize: 12, marginTop: 4 }}>
               {editingItem 
                 ? '注：新增的附件将在保存后上传。要管理已有附件，请在表格操作栏点击【附件】。'
@@ -548,17 +550,19 @@ export function ContractsPage() {
         width={700}
         destroyOnClose
       >
-        <Upload
-          beforeUpload={(file) => {
-            handleUploadAttachment(file)
-            return false
-          }}
-          showUploadList={false}
-        >
-          <Button icon={<PlusOutlined />} type="primary" style={{ marginBottom: 16 }}>
-            上传附件
-          </Button>
-        </Upload>
+        <Permission permission="business:contract:update">
+          <Upload
+            beforeUpload={(file) => {
+              handleUploadAttachment(file)
+              return false
+            }}
+            showUploadList={false}
+          >
+            <Button icon={<PlusOutlined />} type="primary" style={{ marginBottom: 16 }}>
+              上传附件
+            </Button>
+          </Upload>
+        </Permission>
         <List
           dataSource={attachments}
           renderItem={(item) => (
@@ -582,15 +586,17 @@ export function ContractsPage() {
                 >
                   下载
                 </Button>,
-                <Popconfirm
-                  title="确认删除该附件吗？"
-                  onConfirm={() => handleDeleteAttachment(item.id)}
-                  key="delete"
-                >
-                  <Button type="link" danger size="small" icon={<DeleteOutlined />}>
-                    删除
-                  </Button>
-                </Popconfirm>,
+                <Permission permission="business:contract:update" key="delete-permission">
+                  <Popconfirm
+                    title="确认删除该附件吗？"
+                    onConfirm={() => handleDeleteAttachment(item.id)}
+                    key="delete"
+                  >
+                    <Button type="link" danger size="small" icon={<DeleteOutlined />}>
+                      删除
+                    </Button>
+                  </Popconfirm>
+                </Permission>,
               ]}
             >
               <List.Item.Meta

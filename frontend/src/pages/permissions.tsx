@@ -16,6 +16,7 @@ import {
   updatePermissionApi,
 } from '../api/permissions'
 import { PageTitle } from '../components/page-title'
+import { useAuthStore } from '../store/auth'
 import type { PermissionItem } from '../types'
 
 interface PermissionFormValues {
@@ -26,6 +27,7 @@ interface PermissionFormValues {
 }
 
 export function PermissionsPage() {
+  const refreshCurrentUser = useAuthStore((state) => state.refreshCurrentUser)
   const [data, setData] = useState<PermissionItem[]>([])
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -73,6 +75,7 @@ export function PermissionsPage() {
       setOpen(false)
       form.resetFields()
       await loadData()
+      await refreshCurrentUser()
     } finally {
       setSubmitting(false)
     }
@@ -161,6 +164,7 @@ export function PermissionsPage() {
                       await deletePermissionApi(record.id)
                       message.success('权限删除成功')
                       await loadData()
+                      await refreshCurrentUser()
                     }}
                   >
                     <Button type="text" danger size="small" icon={<DeleteOutlined />}>

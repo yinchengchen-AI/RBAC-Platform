@@ -2,7 +2,7 @@
 
 This directory contains Docker deployment configurations for the RBAC Platform.
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 deploy/docker/
@@ -17,7 +17,7 @@ deploy/docker/
     └── restore.sh
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Production Deployment
 
@@ -46,12 +46,12 @@ For local development with hot-reload:
 
 ```bash
 # Start infrastructure only (postgres, redis, minio)
-make dev
+make infra
 
 # In separate terminals:
 # Terminal 1 - Backend
 cd backend
-source .venv/bin/activate
+.venv\Scripts\activate
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 # Terminal 2 - Frontend
@@ -59,7 +59,13 @@ cd frontend
 npm run dev
 ```
 
-## 🛠️ Available Commands
+Note:
+
+- The repository currently has `backend/alembic/env.py` but no committed `alembic/versions/` migration scripts.
+- For a fresh local database, create tables first with `python -c "from db.base import Base; from db.session import engine; Base.metadata.create_all(bind=engine)"`, then run `python -m scripts.seed`.
+- The infrastructure-only workflow above is the verified local development path used for recent RBAC work.
+
+## Available Commands
 
 ### Using Make (Recommended)
 
@@ -76,7 +82,10 @@ make status            # Check service health
 make shell-backend     # Open shell in backend container
 make shell-db          # Open psql in postgres container
 make clean             # Stop services and remove volumes
-make dev-infra         # Start development infrastructure
+make infra            # Start infrastructure services
+make infra-down       # Stop infrastructure services
+make dev              # Alias for infra-only local development
+make dev-down         # Stop infra started for local development
 ```
 
 ### Direct Docker Commands
@@ -90,9 +99,13 @@ docker compose -f deploy/docker/compose.yml logs -f
 # Development infrastructure only
 docker compose -f deploy/docker/compose.dev.yml up -d
 docker compose -f deploy/docker/compose.dev.yml down
+
+# Verified infra-only setup used in this repository
+docker compose -f deploy/docker/compose.infra.yml up -d
+docker compose -f deploy/docker/compose.infra.yml down
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -109,7 +122,7 @@ docker compose -f deploy/docker/compose.dev.yml down
 | `MINIO_ROOT_PASSWORD` | minioadmin | MinIO secret key |
 | `JWT_SECRET_KEY` | change-me-in-production | JWT signing key |
 
-## 💾 Backup & Restore
+## Backup & Restore
 
 ### Backup
 
@@ -139,7 +152,7 @@ Backups are saved to `./backups/` by default:
 ./deploy/docker/scripts/restore.sh -y backups/postgres_20240101_120000.sql.gz
 ```
 
-## 🏥 Health Checks
+## Health Checks
 
 ```bash
 # Check all services
@@ -152,7 +165,7 @@ curl http://localhost:8000/docs                # API Docs
 curl http://localhost:9001/                    # MinIO Console
 ```
 
-## 🔒 Security Best Practices
+## Security Best Practices
 
 1. **Change default passwords** in `.env` before production use
 2. **Use strong JWT_SECRET_KEY** (generate with `openssl rand -hex 32`)
@@ -161,7 +174,7 @@ curl http://localhost:9001/                    # MinIO Console
 5. **Run containers as non-root** - all services run with dedicated users
 6. **Regular updates** - keep base images updated
 
-## 📝 Dockerfile Targets
+## Dockerfile Targets
 
 ### Backend
 - `production` (default) - Optimized for production
@@ -176,7 +189,7 @@ Build specific target:
 docker build --target development -t rbac-backend:dev ./backend
 ```
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Container won't start
 ```bash
@@ -198,13 +211,24 @@ docker compose -f deploy/docker/compose.yml ps
 make shell-db
 ```
 
+### Empty database after startup
+
+If backend containers start against a fresh database, `python -m scripts.seed` alone is not enough to create tables. Create tables first in a local backend environment, then rerun the seed script.
+
+```bash
+cd backend
+.venv\Scripts\activate
+python -c "from db.base import Base; from db.session import engine; Base.metadata.create_all(bind=engine)"
+python -m scripts.seed
+```
+
 ### Clean restart
 ```bash
 make clean
 make up
 ```
 
-## 📊 Resource Limits
+## Resource Limits
 
 Production compose includes resource limits:
 

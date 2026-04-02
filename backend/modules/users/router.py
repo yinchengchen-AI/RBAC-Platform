@@ -230,7 +230,7 @@ def reset_password(
 def delete_user(
     user_id: str,
     current_user: User = Depends(bind_current_user),
-    _: User = Depends(permission_required("system:user:update")),
+    _: User = Depends(permission_required("system:user:delete")),
     db: Session = Depends(get_db),
 ):
     user = db.get(User, user_id)

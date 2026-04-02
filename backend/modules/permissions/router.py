@@ -89,7 +89,7 @@ def update_permission(
 def delete_permission(
     permission_id: str,
     current_user: User = Depends(bind_current_user),
-    _: User = Depends(permission_required("system:permission:update")),
+    _: User = Depends(permission_required("system:permission:delete")),
     db: Session = Depends(get_db),
 ):
     item = db.get(Permission, permission_id)

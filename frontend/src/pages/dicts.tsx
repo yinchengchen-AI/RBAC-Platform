@@ -58,10 +58,10 @@ export function DictsPage() {
       <Space style={{ marginBottom: 16 }}>
         <Permission permission="system:dict:create"><Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingType(null); typeForm.setFieldsValue({ status: 1 }); setTypeOpen(true) }}>新建字典类型</Button></Permission>
         <Permission permission="system:dict:create"><Button onClick={() => { setEditingItem(null); itemForm.setFieldsValue({ dict_code: activeCode, status: 1, sort: 0 }); setItemOpen(true) }} disabled={!activeCode}>新建字典项</Button></Permission>
-        <Button disabled={!activeCode} onClick={async () => { if (!activeCode) return; const response = await exportDictItemsApi(activeCode); const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `dict-${activeCode}.xlsx`; a.click(); window.URL.revokeObjectURL(url) }}>导出字典项</Button>
-        <Upload showUploadList={false} accept=".xlsx" customRequest={async ({ file, onSuccess, onError }) => { try { if (!activeCode) return; const formData = new FormData(); formData.append('file', file as Blob); await importDictItemsApi(activeCode, formData); message.success('导入成功'); await loadItems(activeCode); onSuccess?.({}, new XMLHttpRequest()) } catch (error) { onError?.(error as Error) } }}>
+        <Permission permission="system:dict:view"><Button disabled={!activeCode} onClick={async () => { if (!activeCode) return; const response = await exportDictItemsApi(activeCode); const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `dict-${activeCode}.xlsx`; a.click(); window.URL.revokeObjectURL(url) }}>导出字典项</Button></Permission>
+        <Permission permission="system:dict:create"><Upload showUploadList={false} accept=".xlsx" customRequest={async ({ file, onSuccess, onError }) => { try { if (!activeCode) return; const formData = new FormData(); formData.append('file', file as Blob); await importDictItemsApi(activeCode, formData); message.success('导入成功'); await loadItems(activeCode); onSuccess?.({}, new XMLHttpRequest()) } catch (error) { onError?.(error as Error) } }}>
           <Button disabled={!activeCode}>导入字典项</Button>
-        </Upload>
+        </Upload></Permission>
       </Space>
       <Table<DictItem>
         rowKey="id"

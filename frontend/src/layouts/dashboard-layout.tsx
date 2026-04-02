@@ -20,17 +20,23 @@ import { Avatar, Badge, Button, Dropdown, Layout, Menu, Space, Typography } from
 import { useTodoStore } from '../store/todos'
 import type { MenuProps } from 'antd'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 
+import { hasRouteAccess } from '../access'
 import { useAuthStore } from '../store/auth'
 import { NotificationDropdown } from '../components/notification-dropdown'
 
 const { Header, Sider, Content } = Layout
 
 type AntdMenuItem = NonNullable<MenuProps['items']>[number]
+type AppMenuItem = Exclude<AntdMenuItem, null>
+
+function hasChildren(item: AppMenuItem): item is AppMenuItem & { children: AppMenuItem[] } {
+  return 'children' in item && Array.isArray(item.children)
+}
 
 // 静态菜单配置
-const STATIC_MENU_ITEMS: AntdMenuItem[] = [
+const STATIC_MENU_ITEMS: AppMenuItem[] = [
   {
     key: '/dashboard',
     icon: <DashboardOutlined />,
@@ -87,7 +93,56 @@ export function DashboardLayout() {
     fetchCount()
   }, [])
 
-  const menuItems = STATIC_MENU_ITEMS
+  const menuItems = useMemo(() => {
+    const filterMenuItems = (items: AppMenuItem[]): AntdMenuItem[] => {
+      const visibleItems: AntdMenuItem[] = []
+
+      for (const item of items) {
+        if (item.type === 'divider') {
+          visibleItems.push(item)
+          continue
+        }
+        if (hasChildren(item)) {
+          const visibleChildren = filterMenuItems(item.children)
+          if (visibleChildren.length === 0) {
+            continue
+          }
+          visibleItems.push({ ...item, children: visibleChildren })
+          continue
+        }
+
+        if (typeof item.key === 'string' && hasRouteAccess(currentUser, item.key)) {
+          visibleItems.push(item)
+        }
+      }
+
+      return visibleItems
+    }
+
+    return filterMenuItems(STATIC_MENU_ITEMS)
+  }, [currentUser])
+
+  const pageTitle = useMemo(() => {
+    const findLabel = (items: AntdMenuItem[]): string | undefined => {
+      for (const item of items) {
+        if (!item || item.type === 'divider') {
+          continue
+        }
+        if (item.key === location.pathname && typeof item.label === 'string') {
+          return item.label
+        }
+        if ('children' in item && item.children) {
+          const childLabel = findLabel(item.children)
+          if (childLabel) {
+            return childLabel
+          }
+        }
+      }
+      return undefined
+    }
+
+    return findLabel(menuItems) || '工作台'
+  }, [location.pathname, menuItems])
 
   return (
     <Layout className="app-shell" style={{ minHeight: '100vh' }}>
@@ -155,10 +210,7 @@ export function DashboardLayout() {
           {/* 左侧：页面标题 */}
           <div className="header-left">
             <Typography.Title level={5} style={{ margin: 0, fontWeight: 600 }}>
-              {(menuItems?.find(item => item?.key === location.pathname) as { label?: string })?.label || 
-               (menuItems?.flatMap(item => (item as { children?: Array<{ key: string; label: string }> })?.children || [])
-                 .find(child => child?.key === location.pathname))?.label || 
-               '工作台'}
+              {pageTitle}
             </Typography.Title>
           </div>
 

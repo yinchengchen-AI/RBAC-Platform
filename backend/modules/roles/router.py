@@ -26,7 +26,6 @@ def _build_role_payload(role: Role) -> dict:
             {"id": item.id, "code": item.code, "name": item.name}
             for item in role.permissions
         ],
-
         "data_scope_type": data_scope_rule.scope_type if data_scope_rule else "all",
         "data_scope_department_ids": data_scope_rule.department_ids.split(",")
         if data_scope_rule and data_scope_rule.department_ids
@@ -172,7 +171,7 @@ def update_role(
 def delete_role(
     role_id: str,
     current_user: User = Depends(bind_current_user),
-    _: User = Depends(permission_required("system:role:update")),
+    _: User = Depends(permission_required("system:role:delete")),
     db: Session = Depends(get_db),
 ):
     role = db.get(Role, role_id)

@@ -100,10 +100,17 @@ deploy/     Docker 编排与部署配置
 docs/       项目文档
 ```
 
-后端采用模块化路由拆分，数据库结构通过 Alembic 迁移管理，种子数据独立初始化；前端基于当前用户菜单动态生成路由，并通过权限码控制页面内操作显隐。
+后端采用模块化路由拆分，当前仓库保留了 Alembic 基础结构但尚未提交 `versions/` 迁移脚本；首次初始化数据库时需要先创建表，再执行种子数据脚本。前端基于当前用户信息做路由、菜单和按钮级权限控制，并在角色/权限变更后主动刷新当前登录用户。
 
 ## 最近更新
 
+- 后端 users / roles / permissions 删除接口统一改为使用 `*:delete` 权限码，修复前后端删除权限不一致问题
+- `backend/db/init_db.py` 补齐 `system:user:delete`、`system:role:delete`、`system:permission:delete` 三个系统删除权限，并支持对已有库回填到 `super_admin`
+- 前端路由权限不再默认放行，`ProtectedRoute` 和左侧菜单现在都复用同一套路由权限映射
+- `users`、`roles`、`permissions` 页面在修改当前登录用户相关的角色/权限后会触发 `refreshCurrentUser()`，菜单和路由权限立即生效，无需重新登录
+- `documents` 页面补齐上传/删除按钮权限控制，`configs` 和 `dicts` 页面补齐导入/导出按钮权限控制，`contracts` 页面补齐附件相关按钮权限控制
+- `services` 页面移除前端假新增/编辑/删除能力，收敛为与后端接口一致的只读列表页
+- 新增后端权限回归测试，最近一次权限回归结果为 `63 passed, 2 warnings`
 - 用户管理表单支持部门树选择，便于在多级组织结构下快速归属用户
 - 用户创建与编辑失败时会优先展示后端返回的明确错误信息，例如重名用户名、密码错误等
 - 用户更新接口补齐 `department_id` 字段，避免编辑用户时出现后端 500
@@ -120,6 +127,14 @@ docs/       项目文档
 - `department_id` 已纳入用户创建和更新请求体
 - 新建用户时如果用户名已存在，接口会返回可直接展示的业务错误信息
 - 如果用户名命中已软删除账户，也会阻止复用并返回明确提示
+
+### RBAC 权限落地
+
+- 后端接口的查看 / 新建 / 编辑 / 删除权限码已与前端按钮控制对齐，删除操作统一使用 `*:delete`
+- 前端路由访问不再只依赖登录态，而是基于 `frontend/src/access/index.ts` 中的路由权限映射进行校验
+- 左侧菜单会根据当前用户权限过滤，无权限用户即使手输 URL 也会被重定向回 `/dashboard`
+- 当前登录用户的角色或权限被修改后，前端会主动刷新当前用户信息，菜单、路由和按钮显隐即时收敛
+- 已创建非超管联调账号 `limited_user_230838 / Admin@123456` 用于验证 `/users`、`/roles`、`/permissions`、`/documents` 可访问，而 `/companies`、`/contracts`、`/services`、`/configs` 会返回 403
 
 ### 文件与头像上传
 
@@ -153,10 +168,16 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-alembic upgrade head
+python -c "from db.base import Base; from db.session import engine; Base.metadata.create_all(bind=engine)"
 python -m scripts.seed
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+说明：
+
+- 当前仓库只有 `backend/alembic/env.py` 和模板文件，尚未提交 `versions/` 迁移脚本，因此首次建表需要先执行 `Base.metadata.create_all(...)`
+- 应用启动时会尝试补齐种子数据，但不会自动创建缺失的数据表
+- 本地验证时前端 dev server 如果 `5173` 被占用会自动顺延到下一个可用端口，本次联调实际运行在 `http://127.0.0.1:3002`
 
 前端：
 ```bash
@@ -183,7 +204,7 @@ docker compose -f deploy/docker/compose.yml up --build -d
 
 | 服务 | 地址 | 说明 |
 |------|------|------|
-| 前端 | http://localhost:5173 | React 开发服务器 |
+| 前端 | http://localhost:5173 | React 开发服务器，端口被占用时 Vite 会自动顺延 |
 | 前端生产 | http://localhost:3000 | Nginx 服务 |
 | 后端 API | http://localhost:8000 | FastAPI 服务 |
 | API 文档 | http://localhost:8000/docs | Swagger UI |
@@ -193,6 +214,12 @@ docker compose -f deploy/docker/compose.yml up --build -d
 
 - 用户名：`admin`
 - 密码：`Admin@123456`
+
+联调用受限账号：
+
+- 用户名：`limited_user_230838`
+- 密码：`Admin@123456`
+- 已验证拥有：`system:user:view`、`system:role:view`、`system:permission:view`、`system:file:view`
 
 ## 项目脚本
 
@@ -251,11 +278,19 @@ npm run build          # 生产构建
 cd backend
 pytest -v
 
-# 测试结果 (24 tests)
-# tests/test_auth_flow.py::test_login_returns_tokens PASSED
-# tests/test_auth_flow.py::test_refresh_returns_new_tokens PASSED
-# ...
+# 最近一次权限回归结果
+# 63 passed, 2 warnings
 ```
+
+当前重点覆盖的测试文件：
+
+- `tests/test_auth_flow.py`
+- `tests/test_auth_guards.py`
+- `tests/test_user_guards.py`
+- `tests/test_data_scope_filters.py`
+- `tests/test_permission_matrix.py`
+- `tests/test_superuser_access.py`
+- `tests/test_seed_permissions.py`
 
 ## Docker 支持
 

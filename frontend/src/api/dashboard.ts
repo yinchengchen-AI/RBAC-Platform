@@ -1,6 +1,5 @@
-import axios from 'axios'
-
-const API_BASE = '/api/v1'
+import type { ApiResponse } from '../types'
+import request from '../utils/request'
 
 export interface DashboardStats {
   overview: {
@@ -33,4 +32,4 @@ export interface DashboardStats {
 }
 
 export const fetchDashboardStatsApi = () =>
-  axios.get(`${API_BASE}/dashboard/stats`)
+  request.get<ApiResponse<DashboardStats>>('/dashboard/stats')

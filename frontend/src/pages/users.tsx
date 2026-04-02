@@ -20,6 +20,7 @@ import { fetchDepartmentsApi, type DepartmentItem } from '../api/departments'
 import { fetchRolesApi } from '../api/roles'
 import { createUserApi, deleteUserApi, fetchUsersApi, resetUserPasswordApi, updateUserApi } from '../api/users'
 import { PageTitle } from '../components/page-title'
+import { useAuthStore } from '../store/auth'
 import type { RoleItem, UserItem } from '../types'
 
 interface UserFormValues {
@@ -50,6 +51,7 @@ function buildDepartmentTree(items: DepartmentItem[]) {
 }
 
 export function UsersPage() {
+  const refreshCurrentUser = useAuthStore((state) => state.refreshCurrentUser)
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -142,6 +144,7 @@ export function UsersPage() {
       setOpen(false)
       form.resetFields()
       await loadData()
+      await refreshCurrentUser()
     } catch (error: any) {
       if (error.response?.data?.detail) {
         message.error(error.response.data.detail)
@@ -158,6 +161,7 @@ export function UsersPage() {
       await deleteUserApi(userId)
       message.success('用户删除成功')
       await loadData()
+      await refreshCurrentUser()
     } catch (error: any) {
       if (error.response?.data?.detail) {
         message.error(error.response.data.detail)

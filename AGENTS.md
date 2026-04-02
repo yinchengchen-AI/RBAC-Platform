@@ -1,488 +1,223 @@
-# RBAC Platform - AI Agent Guide
+# RBAC Platform Agent Guide
 
-本文档为 AI 编程助手提供项目背景、架构说明和开发规范，帮助快速理解和高效协作。
+This file is for coding agents working in `E:\OpenCode\RBAC-Platform`.
+Focus on making small, consistent changes that match the existing FastAPI + React codebase.
 
----
+## Rule Files
 
-## 项目概述
+- No Cursor rules were found in `.cursor/rules/`.
+- No `.cursorrules` file was found.
+- No Copilot instructions were found in `.github/copilot-instructions.md`.
+- Treat this file as the primary agent instruction source inside the repository.
 
-RBAC Platform 是一个面向中后台系统的可扩展权限管理平台，聚焦用户、角色、权限、菜单、数据权限、文件管理与审计日志等基础能力。
+## Repository Shape
 
-### 核心特性
+- `backend/`: FastAPI app, SQLAlchemy models, Pydantic schemas, Alembic migrations, pytest tests.
+- `frontend/`: Vite + React 19 + TypeScript + Ant Design app.
+- `deploy/docker/`: Docker Compose files for infra, dev, and production-like runs.
+- `Makefile`: Docker and infra helper commands.
 
-- 自建 RBAC 权限模型（不依赖 Casbin）
-- 菜单权限与按钮权限控制
-- 角色数据权限范围配置（全部/本人部门/本人及下级/自定义）
-- 部门、字典、系统参数等平台基础模块
-- 登录日志、操作日志统一审计
-- MinIO 文件上传与统一管理
-- Docker Compose 一键启动完整环境
+## Core Workflow
 
----
+- Prefer local, minimal edits over broad refactors.
+- Preserve existing Chinese user-facing copy unless the task requires changing it.
+- Do not invent new architecture layers unless repetition or reuse clearly justifies it.
+- When adding backend features, update models, schemas, router logic, and tests together.
+- When adding frontend features, keep API access in `src/api/`, state in Zustand stores if shared, and page UI in `src/pages/`.
 
-## 技术栈
+## Setup Commands
 
-### 前端
+### Infrastructure
 
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| React | 19 | UI 框架 |
-| TypeScript | 5.9 | 类型安全 |
-| Vite | 8 | 构建工具 |
-| Ant Design | 5.28 | UI 组件库 |
-| Zustand | 5 | 状态管理 |
-| React Router | 7 | 路由管理 |
-| Axios | - | HTTP 客户端 |
-
-### 后端
-
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| FastAPI | 0.116 | Web 框架 |
-| SQLAlchemy | 2.0 | ORM |
-| Alembic | 1.16 | 数据库迁移 |
-| Pydantic | 2 | 数据验证 |
-| Redis | 6.4 | 缓存/Token 存储 |
-| Passlib/bcrypt | - | 密码加密 |
-| python-jose | - | JWT 处理 |
-| pytest | 8.4 | 测试框架 |
-
-### 基础设施
-
-| 服务 | 版本 | 用途 |
-|------|------|------|
-| PostgreSQL | 16 | 主数据库 |
-| Redis | 7 | 缓存/会话 |
-| MinIO | latest | 对象存储 |
-| Nginx | - | 前端托管/反向代理 |
-
----
-
-## 项目结构
-
-```
-RBAC-Platform/
-├── frontend/           # React 前端应用
-│   ├── src/
-│   │   ├── api/       # API 接口定义
-│   │   ├── components/# 通用组件
-│   │   ├── layouts/   # 布局组件
-│   │   ├── pages/     # 页面组件
-│   │   ├── router/    # 路由配置
-│   │   ├── store/     # Zustand 状态管理
-│   │   ├── access/    # 权限控制逻辑
-│   │   └── utils/     # 工具函数
-│   ├── package.json   # npm 依赖
-│   ├── vite.config.ts # Vite 配置
-│   └── tsconfig.json  # TypeScript 配置
-│
-├── backend/           # FastAPI 后端服务
-│   ├── modules/       # 业务模块路由
-│   │   ├── auth/      # 认证模块
-│   │   ├── users/     # 用户管理
-│   │   ├── roles/     # 角色管理
-│   │   ├── permissions/# 权限管理
-│   │   ├── menus/     # 菜单管理
-│   │   ├── departments/# 部门管理
-│   │   ├── dicts/     # 数据字典
-│   │   ├── configs/   # 系统参数
-│   │   ├── files/     # 文件管理
-│   │   └── audit/     # 审计日志
-│   ├── models/        # SQLAlchemy 模型
-│   ├── schemas/       # Pydantic 模式
-│   ├── core/          # 核心功能
-│   │   ├── config.py  # 配置管理
-│   │   ├── security.py# 安全工具
-│   │   ├── cache.py   # Redis 缓存
-│   │   ├── storage.py # MinIO 存储
-│   │   ├── middleware.py # 中间件
-│   │   └── responses.py  # 统一响应
-│   ├── db/            # 数据库相关
-│   │   ├── session.py # 会话管理
-│   │   └── init_db.py # 初始化逻辑
-│   ├── scripts/       # 脚本工具
-│   │   └── seed.py    # 种子数据
-│   ├── tests/         # 测试用例
-│   ├── alembic/       # 迁移脚本
-│   ├── main.py        # 应用入口
-│   └── requirements.txt # Python 依赖
-│
-├── deploy/            # 部署配置
-│   └── docker/
-│       ├── compose.yml      # 生产编排
-│       ├── compose.infra.yml # 基础设施
-│       ├── compose.dev.yml   # 开发环境
-│       ├── nginx/
-│       └── scripts/          # 工具脚本
-│
-├── Makefile           # 构建命令
-└── start-dev.sh       # 一键启动脚本
-```
-
----
-
-## 开发环境配置
-
-### 方式一：基础设施 + 本地开发（推荐）
+Run from repository root:
 
 ```bash
-# 1. 启动基础设施（PostgreSQL、Redis、MinIO）
 make infra
+make infra-down
+make dev
+make dev-down
+make status
+```
 
-# 2. 后端开发
-cd backend
+Direct Docker Compose equivalents:
+
+```bash
+docker compose -f deploy/docker/compose.infra.yml up -d
+docker compose -f deploy/docker/compose.infra.yml down
+docker compose -f deploy/docker/compose.yml up -d
+docker compose -f deploy/docker/compose.yml down
+```
+
+### Backend Setup
+
+Run from `backend/`:
+
+```bash
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+.venv\Scripts\activate
 pip install -r requirements.txt
 alembic upgrade head
 python -m scripts.seed
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
 
-# 3. 前端开发
-cd frontend
+Notes:
+
+- Tests set `SKIP_DB_INIT=1` in `backend/tests/conftest.py`.
+- The repository documents Ruff usage, but `ruff` is not pinned in `backend/requirements.txt`; install it separately if needed.
+
+### Frontend Setup
+
+Run from `frontend/`:
+
+```bash
 npm install
 npm run dev
-```
-
-### 方式二：一键启动脚本
-
-```bash
-./start-dev.sh
-```
-
-### 方式三：Docker Compose 完整启动
-
-```bash
-docker compose -f deploy/docker/compose.yml up --build -d
-```
-
----
-
-## 常用命令
-
-### Make 命令
-
-```bash
-make help           # 显示所有命令
-make infra          # 启动基础设施
-make infra-down     # 停止基础设施
-make build          # 构建 Docker 镜像
-make up             # 启动完整服务
-make down           # 停止完整服务
-make logs           # 查看日志
-make status         # 服务健康检查
-```
-
-### 后端开发
-
-```bash
-cd backend
-
-# 依赖管理
-pip install -r requirements.txt
-
-# 数据库迁移
-alembic revision --autogenerate -m "描述"
-alembic upgrade head
-alembic downgrade -1
-
-# 种子数据
-python -m scripts.seed
-
-# 代码检查
-ruff check .
-ruff check . --fix
-
-# 运行测试
-pytest -v
-```
-
-### 前端开发
-
-```bash
-cd frontend
-
-# 依赖管理
-npm install
-
-# 开发服务器
-npm run dev          # http://localhost:5173
-
-# 生产构建
 npm run build
-
-# 代码检查
 npm run lint
 ```
 
----
+Useful direct checks:
 
-## 代码规范
-
-### Python 后端
-
-- 使用 **Ruff** 进行代码检查和格式化
-- 遵循 **PEP 8** 编码规范
-- 类型注解：使用 Python 3.10+ 语法（`| None` 而非 `Optional`）
-- 导入顺序：标准库 → 第三方库 → 本地模块
-- 模型定义：使用 SQLAlchemy 2.0 的 `Mapped` 语法
-- 时区处理：统一使用上海时区（UTC+8）
-
-```python
-# 示例：模型定义
-from sqlalchemy.orm import Mapped, mapped_column
-from models.base import Base, IdMixin, TimestampMixin
-
-class User(Base, IdMixin, TimestampMixin):
-    __tablename__ = "sys_user"
-    
-    username: Mapped[str] = mapped_column(String(50), unique=True)
-    email: Mapped[str | None] = mapped_column(String(100), nullable=True)
+```bash
+npx tsc -b
+npx eslint src
 ```
 
-### TypeScript 前端
+## Build And Lint Commands
 
-- 使用 **ESLint + typescript-eslint** 进行代码检查
-- 严格类型检查开启
-- 组件使用函数式组件 + Hooks
-- 状态管理使用 Zustand
-- API 调用统一封装在 `src/api/` 目录
+### Backend
 
-```typescript
-// 示例：API 定义
-import { request } from '../utils/request'
-import type { User } from '../types'
+Run from `backend/`:
 
-export const fetchUsersApi = () => 
-  request.get<{ data: User[] }>('/users')
+```bash
+ruff check .
+ruff check . --fix
+pytest -v
 ```
 
----
+There is no repo-local `pyproject.toml`, `ruff.toml`, or `pytest.ini` in `backend/` currently.
 
-## 测试策略
+### Frontend
 
-### 后端测试
+Run from `frontend/`:
 
-测试文件位于 `backend/tests/`，使用 pytest：
+```bash
+npm run build
+npm run lint
+npx tsc -b
+```
+
+There is currently no frontend unit test runner configured in `package.json`.
+
+## Test Commands
+
+### Run All Backend Tests
 
 ```bash
 cd backend
 pytest -v
 ```
 
-测试覆盖：
-- `test_auth_flow.py` - 认证流程（登录、刷新 Token）
-- `test_auth_guards.py` - 权限守卫
-- `test_user_guards.py` - 用户权限
-- `test_crud_routes.py` - CRUD 路由
-- `test_data_scope_filters.py` - 数据权限过滤
-- `test_audit_routes.py` - 审计日志
-- `test_security.py` - 安全功能
-- `test_health.py` - 健康检查
-
-测试使用 FakeRedis 和 FakeDB 进行依赖注入，避免依赖外部服务。
-
-### 前端测试
-
-目前项目未配置前端单元测试，建议使用 Vitest + React Testing Library 补充。
-
----
-
-## 数据库迁移
-
-使用 Alembic 管理数据库结构变更：
+### Run A Single Test File
 
 ```bash
 cd backend
-
-# 生成迁移脚本
-alembic revision --autogenerate -m "添加新表"
-
-# 执行升级
-alembic upgrade head
-
-# 回滚一级
-alembic downgrade -1
-
-# 查看历史
-alembic history
+pytest tests/test_auth_flow.py -v
 ```
 
-迁移脚本位于 `backend/alembic/versions/`。
-
----
-
-## 配置管理
-
-### 后端配置
-
-配置通过环境变量 + `pydantic-settings` 管理，参见 `backend/core/config.py`：
-
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `DATABASE_URL` | PostgreSQL 连接 | `postgresql+psycopg://postgres:postgres@localhost:5432/rbac_platform` |
-| `REDIS_URL` | Redis 连接 | `redis://localhost:6379/0` |
-| `MINIO_ENDPOINT` | MinIO 地址 | `localhost:9000` |
-| `JWT_SECRET_KEY` | JWT 密钥 | `change-me-in-production` |
-| `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | Access Token 过期 | 30 |
-| `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | Refresh Token 过期 | 7 |
-| `BACKEND_CORS_ORIGINS` | CORS 白名单 | `["http://localhost:3000"]` |
-
-### 前端配置
-
-运行时通过 `import.meta.env` 访问环境变量：
-
-- `VITE_API_BASE_URL` - API 基础地址（构建时注入）
-
----
-
-## API 规范
-
-### 统一响应格式
-
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": { }
-}
-```
-
-### 错误响应
-
-```json
-{
-  "code": 400,
-  "message": "请求参数错误",
-  "data": null
-}
-```
-
-### 认证方式
-
-- 登录获取 `access_token` 和 `refresh_token`
-- 请求头携带 `Authorization: Bearer <access_token>`
-- Access Token 30 分钟过期，使用 Refresh Token 续期
-- Refresh Token 7 天过期，存储于 Redis 可吊销
-
----
-
-## 权限系统
-
-### 权限模型
-
-- **菜单权限**：控制页面访问（路由级）
-- **按钮权限**：控制操作显隐（权限码，如 `user:create`）
-- **数据权限**：控制数据范围（全部/本人部门/本人及下级/自定义）
-
-### 权限检查
-
-前端权限检查：`src/access/permission.tsx`
-
-```typescript
-// 检查路由访问权限
-hasRouteAccess(user, '/users')
-
-// 检查按钮权限
-hasPermission(user, 'user:create')
-```
-
----
-
-## 文件存储
-
-使用 MinIO 作为对象存储：
-
-- `public` bucket：公开访问（头像等）
-- `private` bucket：私有访问（需预签名 URL）
-
-上传流程：
-1. 前端获取预签名上传 URL
-2. 直接上传至 MinIO
-3. 后端保存文件元数据
-
----
-
-## 访问地址
-
-开发环境启动后：
-
-| 服务 | 地址 | 说明 |
-|------|------|------|
-| 前端开发 | http://localhost:5173 | Vite Dev Server |
-| 后端 API | http://localhost:8000 | FastAPI |
-| API 文档 | http://localhost:8000/docs | Swagger UI |
-| MinIO 控制台 | http://localhost:9001 | 对象存储管理 |
-
-默认账号：`admin / Admin@123456`
-
----
-
-## 安全注意事项
-
-1. **JWT 密钥**：生产环境必须修改 `JWT_SECRET_KEY`
-2. **数据库密码**：避免使用默认密码
-3. **CORS 配置**：生产环境限制为实际域名
-4. **文件上传**：限制文件类型和大小（后端已做校验）
-5. **Docker 部署**：使用非 root 用户运行容器
-
----
-
-## 扩展开发指南
-
-### 添加新模块
-
-1. 在 `backend/modules/` 创建新目录
-2. 定义模型（`models/`）
-3. 定义 Schema（`schemas/`）
-4. 实现路由（`modules/{name}/router.py`）
-5. 注册路由（`modules/router.py`）
-6. 生成迁移：`alembic revision --autogenerate`
-
-### 添加前端页面
-
-1. 在 `frontend/src/pages/` 创建页面组件
-2. 在 `frontend/src/api/` 添加 API 接口
-3. 在 `frontend/src/router/index.tsx` 注册路由
-4. 在数据库菜单表中添加菜单项
-
----
-
-## 故障排查
-
-### 后端
+### Run A Single Test Function
 
 ```bash
-# 检查数据库连接
-alembic current
-
-# 查看日志
-uvicorn main:app --reload --log-level debug
-
-# Redis 连接测试
-redis-cli ping
+cd backend
+pytest tests/test_auth_flow.py::test_login_returns_tokens -v
 ```
 
-### 前端
+### Run Tests Matching A Keyword
 
 ```bash
-# 清除缓存
-rm -rf node_modules/.vite
-npm run dev
-
-# 类型检查
-npx tsc --noEmit
+cd backend
+pytest -k auth -v
 ```
 
-### Docker
+### Stop On First Failure
 
 ```bash
-# 查看服务状态
-docker compose -f deploy/docker/compose.yml ps
-
-# 查看日志
-docker compose -f deploy/docker/compose.yml logs -f
-
-# 重启服务
-docker compose -f deploy/docker/compose.yml restart
+cd backend
+pytest -x -v
 ```
+
+### Frontend Tests
+
+- No frontend test command exists yet.
+- If you add frontend tests, document the exact command in this file.
+
+## Backend Style Guidelines
+
+- Follow the existing import grouping: standard library, third-party, local modules.
+- Use one import per line group; avoid unused imports.
+- Prefer explicit imports from local modules such as `from core.responses import success`.
+- Use Python 3.10 union syntax like `str | None`, not `Optional[str]`.
+- Keep type hints on function parameters and return values when practical.
+- Use SQLAlchemy 2 typed models with `Mapped[...]` and `mapped_column(...)`.
+- Keep table names in `snake_case` strings such as `"sys_user"`.
+- Model classes use `PascalCase`; fields and variables use `snake_case`.
+- Keep shared mixins in `models/base.py` patterns rather than duplicating timestamp or audit fields.
+- Prefer small private serializer helpers like `_build_user_payload()` when response shaping is nontrivial.
+- Return API payloads through `core.responses.success()` for normal success cases.
+- Raise `HTTPException` with clear `detail` messages for request and business rule failures.
+- Preserve current soft-delete behavior using `is_deleted` rather than hard deletes unless explicitly required.
+- Update `created_by` and `updated_by` where the surrounding module already follows that audit pattern.
+- Use Shanghai timezone conventions already defined in `models.base.SHANGHAI_TZ`.
+- Keep route handlers thin when possible, but do not create abstraction layers without a real reuse need.
+- Match existing pagination shape: `items`, `total`, `page`, `page_size`.
+- Prefer query construction with `select(...)`, `where(...)`, and SQLAlchemy expressions over raw SQL.
+- In tests, follow the current fake dependency override pattern in `backend/tests/test_auth_flow.py`.
+
+## Frontend Style Guidelines
+
+- Use TypeScript everywhere in `src/`.
+- Keep strict typing intact; `frontend/tsconfig.app.json` enables `strict`, `noUnusedLocals`, and `noUnusedParameters`.
+- Component names, store hooks, and exported page components use `PascalCase` or `camelCase` as appropriate.
+- React components are function components.
+- Keep page components in `src/pages/` and export named page components such as `UsersPage`.
+- Keep API helpers in `src/api/*.ts` and name them with an `Api` suffix, for example `fetchUsersApi`.
+- Import types with `import type` when only types are used.
+- Use `camelCase` for variables and functions; use backend field names like `page_size` or `department_id` only where API shape requires them.
+- Reuse shared interfaces from `src/types.ts` or `src/types/` instead of redefining common response shapes.
+- Keep authentication and shared app state in Zustand stores under `src/store/`.
+- Use Ant Design components consistently for forms, tables, modals, messages, and layout controls.
+- Prefer async event handlers with `try/catch/finally` for submit, load, and delete flows.
+- Show user-facing errors with `message.error(...)` and success states with `message.success(...)`.
+- Preserve the existing Axios wrapper in `src/utils/request.ts`; add cross-cutting request behavior there instead of repeating it in pages.
+- Use lazy routes and route guards consistently with `src/router/index.tsx`.
+- Follow the existing quote and semicolon style already enforced by the frontend ESLint setup and current files.
+
+## Error Handling
+
+- Backend: prefer explicit `HTTPException` responses over silent failures.
+- Backend: include messages that the frontend can display directly when the text is user-safe.
+- Frontend: catch API failures around mutations and major page loads.
+- Frontend: do not swallow errors silently unless local logout or cleanup should remain best-effort.
+- For non-login API failures, preserve the existing global request interceptor behavior unless the task requires a different UX.
+
+## Naming And File Conventions
+
+- Backend module routers live at `backend/modules/<module>/router.py`.
+- Backend schema files mirror domain names such as `schemas/user.py`, `schemas/role.py`.
+- Frontend page filenames are lowercase with dashes only when already established; most current files are lowercase single words like `users.tsx`.
+- Store hooks use the `use...Store` pattern, for example `useAuthStore`.
+- Permission codes use colon-delimited strings like `system:user:create`.
+
+## Validation Before Finishing
+
+- Run targeted tests for the touched backend area when possible.
+- Run `npm run lint` and `npx tsc -b` for frontend edits.
+- Run `pytest` for backend edits, or at least the affected file/test function.
+- If you could not run verification, state that clearly in your final summary.
+
+## Agent Notes
+
+- Prefer editing the existing root `AGENTS.md` rather than adding another one elsewhere.
+- Keep future updates concrete and command-oriented.
+- If tooling changes, update this file with the exact command agents should run.

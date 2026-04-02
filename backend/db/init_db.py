@@ -10,6 +10,23 @@ from models.role import Role
 from models.user import User
 
 
+def _ensure_permissions(db, items: list[Permission]) -> list[Permission]:
+    existing_codes = {
+        code
+        for code in db.scalars(
+            select(Permission.code).where(Permission.is_deleted.is_(False))
+        ).all()
+    }
+    created_items: list[Permission] = []
+    for item in items:
+        if item.code in existing_codes:
+            continue
+        db.add(item)
+        created_items.append(item)
+        existing_codes.add(item.code)
+    return created_items
+
+
 def seed_system_data() -> None:
     with SessionLocal() as db:
         try:
@@ -25,15 +42,42 @@ def seed_system_data() -> None:
             return
 
         if admin:
+            created_permissions = _ensure_permissions(
+                db,
+                [
+                    Permission(
+                        code="system:user:delete", name="删除用户", module="users"
+                    ),
+                    Permission(
+                        code="system:role:delete", name="删除角色", module="roles"
+                    ),
+                    Permission(
+                        code="system:permission:delete",
+                        name="删除权限",
+                        module="permissions",
+                    ),
+                ],
+            )
+            if created_permissions:
+                admin_role = db.scalar(
+                    select(Role).where(
+                        Role.code == "super_admin", Role.is_deleted.is_(False)
+                    )
+                )
+                if admin_role:
+                    admin_role.permissions.extend(created_permissions)
+                db.commit()
             return
 
         permissions = [
             Permission(code="system:user:view", name="查看用户", module="users"),
             Permission(code="system:user:create", name="创建用户", module="users"),
             Permission(code="system:user:update", name="编辑用户", module="users"),
+            Permission(code="system:user:delete", name="删除用户", module="users"),
             Permission(code="system:role:view", name="查看角色", module="roles"),
             Permission(code="system:role:create", name="创建角色", module="roles"),
             Permission(code="system:role:update", name="编辑角色", module="roles"),
+            Permission(code="system:role:delete", name="删除角色", module="roles"),
             Permission(
                 code="system:permission:view", name="查看权限", module="permissions"
             ),
@@ -42,6 +86,9 @@ def seed_system_data() -> None:
             ),
             Permission(
                 code="system:permission:update", name="编辑权限", module="permissions"
+            ),
+            Permission(
+                code="system:permission:delete", name="删除权限", module="permissions"
             ),
             Permission(code="system:file:view", name="查看文件", module="files"),
             Permission(code="system:file:upload", name="上传文件", module="files"),
@@ -71,7 +118,7 @@ def seed_system_data() -> None:
         )
         admin_role.permissions = permissions
 
-        db.add_all(permissions)
+        _ensure_permissions(db, permissions)
         db.add(admin_role)
         db.flush()
 

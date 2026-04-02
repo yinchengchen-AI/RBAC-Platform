@@ -58,6 +58,14 @@ function ProtectedRoute() {
     return <Navigate to="/login" replace />
   }
 
+  if (!currentUser && !loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
+        <Spin size="large" />
+      </div>
+    )
+  }
+
   if (currentUser && !hasRouteAccess(currentUser, pathname)) {
     return <Navigate to="/dashboard" replace />
   }
