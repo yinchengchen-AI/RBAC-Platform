@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from models.base import AuditMixin, Base, IdMixin, TimestampMixin
+from models.base import AuditMixin, Base, IdMixin, TimestampMixin, SHANGHAI_TZ
 from models.relations import user_role
 
 
@@ -22,6 +22,10 @@ class User(Base, IdMixin, TimestampMixin, AuditMixin):
     last_login_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    
+    def update_last_login(self) -> None:
+        """更新最后登录时间为上海时区"""
+        self.last_login_at = datetime.now(SHANGHAI_TZ)
 
     roles = relationship(
         "Role", secondary=user_role, back_populates="users", lazy="joined"

@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from redis import Redis
@@ -16,6 +16,7 @@ from core.security import (
 )
 from db.session import get_db
 from models.audit import LoginLog
+from models.base import SHANGHAI_TZ
 from models.user import User
 from schemas.auth import LoginRequest, LogoutRequest, RefreshTokenRequest
 
@@ -26,27 +27,6 @@ def _serialize_user(user: User) -> dict:
     permissions = sorted(
         {permission.code for role in user.roles for permission in role.permissions}
     )
-    menu_items = []
-    seen_menu_ids: set[str] = set()
-    for role in user.roles:
-        for menu in sorted(role.menus, key=lambda item: item.sort):
-            if menu.id in seen_menu_ids or menu.is_deleted or not menu.visible:
-                continue
-            seen_menu_ids.add(menu.id)
-            menu_items.append(
-                {
-                    "id": menu.id,
-                    "parent_id": menu.parent_id,
-                    "name": menu.name,
-                    "route_path": menu.route_path,
-                    "component": menu.component,
-                    "icon": menu.icon,
-                    "type": menu.type,
-                    "permission_code": menu.permission_code,
-                    "sort": menu.sort,
-                    "visible": menu.visible,
-                }
-            )
     return {
         "id": user.id,
         "username": user.username,
@@ -56,7 +36,6 @@ def _serialize_user(user: User) -> dict:
         "avatar_url": user.avatar_url,
         "is_superuser": user.is_superuser,
         "permissions": permissions,
-        "menus": menu_items,
         "roles": [
             {"id": role.id, "name": role.name, "code": role.code} for role in user.roles
         ],
@@ -91,7 +70,7 @@ def login(
     if user.status != 1:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="账号已禁用")
 
-    user.last_login_at = datetime.now(UTC)
+    user.last_login_at = datetime.now(SHANGHAI_TZ)
     db.add(
         LoginLog(
             username=user.username,

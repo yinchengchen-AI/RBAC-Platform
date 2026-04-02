@@ -1,5 +1,5 @@
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Upload, message } from 'antd'
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Upload, message, Card, Typography } from 'antd'
+import { PlusOutlined, ReloadOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import { useEffect, useState } from 'react'
 
 import { Permission } from '../access/permission'
@@ -17,7 +17,10 @@ export function ConfigsPage() {
     setLoading(true)
     try {
       const response = await fetchConfigsApi()
-      setData(response.data.data)
+      setData(response.data?.data || [])
+    } catch (error) {
+      message.error('加载数据失败')
+      console.error('loadData error:', error)
     } finally {
       setLoading(false)
     }
@@ -54,6 +57,20 @@ export function ConfigsPage() {
           <Form.Item label="描述" name="description"><Input.TextArea rows={3} /></Form.Item>
         </Form>
       </Modal>
+      <Card title={<><InfoCircleOutlined /> 使用说明</>} size="small" style={{ marginTop: 16, background: '#fafafa' }}>
+        <Typography.Paragraph style={{ fontSize: 13, color: '#595959', marginBottom: 8 }}>
+          <strong>系统参数：</strong>用于存储平台级别的配置项，如网站名称、LOGO地址、文件上传大小限制、短信接口配置等。
+        </Typography.Paragraph>
+        <Typography.Paragraph style={{ fontSize: 13, color: '#595959', marginBottom: 8 }}>
+          <strong>参数键：</strong>作为唯一标识符，建议采用小写字母和下划线组合（如：site_name、max_upload_size）。
+        </Typography.Paragraph>
+        <Typography.Paragraph style={{ fontSize: 13, color: '#595959', marginBottom: 8 }}>
+          <strong>值类型：</strong>根据参数值的实际类型选择，布尔值使用 true/false，JSON 类型需保证格式正确。
+        </Typography.Paragraph>
+        <Typography.Paragraph style={{ fontSize: 13, color: '#595959', marginBottom: 0 }}>
+          <strong>典型应用场景：</strong>前端页面标题、系统开关控制、第三方服务密钥、业务规则阈值等全局配置。
+        </Typography.Paragraph>
+      </Card>
     </div>
   )
 }

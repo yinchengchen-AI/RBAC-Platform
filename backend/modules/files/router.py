@@ -13,7 +13,11 @@ from models.user import User
 router = APIRouter()
 
 
-@router.get("")
+@router.get(
+    "",
+    summary="查询文件列表",
+    description="返回未删除的公开文件记录列表。",
+)
 def list_files(
     _: User = Depends(bind_current_user),
     __: User = Depends(permission_required("system:file:view")),
@@ -40,7 +44,12 @@ def list_files(
     )
 
 
-@router.post("/upload", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/upload",
+    status_code=status.HTTP_201_CREATED,
+    summary="上传公开文件",
+    description="上传文件到 MinIO `public` bucket。空文件会被拒绝，空文件名会回退到默认名称。",
+)
 async def upload_file(
     file: UploadFile = File(...),
     current_user: User = Depends(bind_current_user),
@@ -52,11 +61,12 @@ async def upload_file(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="文件内容不能为空"
         )
+    filename = file.filename or "unknown_file"
     object_name, url = upload_public_file(
-        file.filename, content, file.content_type or "application/octet-stream"
+        filename, content, file.content_type or "application/octet-stream"
     )
     entity = SysFile(
-        filename=file.filename,
+        filename=filename,
         object_name=object_name,
         bucket_name=settings.minio_public_bucket,
         url=url,
@@ -74,7 +84,11 @@ async def upload_file(
     )
 
 
-@router.delete("/{file_id}")
+@router.delete(
+    "/{file_id}",
+    summary="删除文件",
+    description="软删除文件记录，不直接移除对象存储中的原始文件。",
+)
 def delete_file(
     file_id: str,
     current_user: User = Depends(bind_current_user),

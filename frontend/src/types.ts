@@ -31,7 +31,6 @@ export interface CurrentUser {
   avatar_url?: string
   is_superuser: boolean
   permissions: string[]
-  menus: MenuItem[]
   roles: RoleSummary[]
 }
 
@@ -70,19 +69,6 @@ export interface PermissionItem {
   description?: string
 }
 
-export interface BackendMenuItem {
-  id: string
-  parent_id?: string
-  name: string
-  type: string
-  route_path?: string
-  component?: string
-  icon?: string
-  sort: number
-  permission_code?: string
-  visible: boolean
-}
-
 export interface RoleItem {
   id: string
   code: string
@@ -92,7 +78,6 @@ export interface RoleItem {
   data_scope_type: string
   data_scope_department_ids: string[]
   permissions: Array<Pick<PermissionItem, 'id' | 'code' | 'name'>>
-  menus: Array<Pick<BackendMenuItem, 'id' | 'name' | 'route_path'>>
 }
 
 export interface FileItem {

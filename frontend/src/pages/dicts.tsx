@@ -1,5 +1,5 @@
-import { Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tabs, Tag, Upload, message } from 'antd'
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tabs, Tag, Upload, message, Card, Typography } from 'antd'
+import { PlusOutlined, ReloadOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import { useEffect, useState } from 'react'
 
 import { Permission } from '../access/permission'
@@ -95,6 +95,20 @@ export function DictsPage() {
           <Form.Item label="状态" name="status"><Select options={[{ label: '启用', value: 1 }, { label: '停用', value: 0 }]} /></Form.Item>
         </Form>
       </Modal>
+      <Card title={<><InfoCircleOutlined /> 使用说明</>} size="small" style={{ marginTop: 16, background: '#fafafa' }}>
+        <Typography.Paragraph style={{ fontSize: 13, color: '#595959', marginBottom: 8 }}>
+          <strong>字典类型：</strong>用于对字典项进行分组管理，每种类型代表一类业务枚举值（如：客户状态、合同类型等）。
+        </Typography.Paragraph>
+        <Typography.Paragraph style={{ fontSize: 13, color: '#595959', marginBottom: 8 }}>
+          <strong>字典项：</strong>每个字典类型下的具体选项值，包含标签（显示文本）和值（存储值）两部分。
+        </Typography.Paragraph>
+        <Typography.Paragraph style={{ fontSize: 13, color: '#595959', marginBottom: 8 }}>
+          <strong>典型应用场景：</strong>表单下拉选择、状态标签显示、数据筛选条件等。
+        </Typography.Paragraph>
+        <Typography.Paragraph style={{ fontSize: 13, color: '#595959', marginBottom: 0 }}>
+          <strong>导入/导出：</strong>支持通过 Excel 批量导入导出字典项，方便数据迁移和备份。
+        </Typography.Paragraph>
+      </Card>
     </div>
   )
 }

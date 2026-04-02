@@ -33,7 +33,10 @@ export function DepartmentsPage() {
     setLoading(true)
     try {
       const response = await fetchDepartmentsApi()
-      setData(response.data.data)
+      setData(response.data?.data || [])
+    } catch (error) {
+      message.error('加载数据失败')
+      console.error('loadData error:', error)
     } finally {
       setLoading(false)
     }

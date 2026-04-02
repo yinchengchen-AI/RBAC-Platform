@@ -20,6 +20,7 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     nickname: str
+    department_id: str | None = None
     email: EmailStr | None = None
     phone: str | None = None
     avatar_url: str | None = None
@@ -29,6 +30,18 @@ class UserUpdate(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     password: str
+
+
+class ProfileUpdate(BaseModel):
+    nickname: str
+    email: EmailStr | None = None
+    phone: str | None = None
+    avatar_url: str | None = None
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
 
 
 class UserOut(UserBase):

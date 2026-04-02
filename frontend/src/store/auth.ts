@@ -33,6 +33,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.setItem('refresh_token', response.data.data.refresh_token)
       localStorage.setItem('current_user', JSON.stringify(response.data.data.user))
       set({ currentUser: response.data.data.user })
+    } catch (error) {
+      throw error
     } finally {
       set({ loading: false })
     }

@@ -1,8 +1,11 @@
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+# 上海时区 (UTC+8)
+SHANGHAI_TZ = datetime.now().astimezone().tzinfo
 
 
 class Base(DeclarativeBase):
@@ -11,12 +14,12 @@ class Base(DeclarativeBase):
 
 class TimestampMixin:
     create_time: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+        DateTime(timezone=True), default=lambda: datetime.now(SHANGHAI_TZ)
     )
     update_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
+        default=lambda: datetime.now(SHANGHAI_TZ),
+        onupdate=lambda: datetime.now(SHANGHAI_TZ),
     )
 
 

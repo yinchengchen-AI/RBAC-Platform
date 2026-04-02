@@ -37,6 +37,7 @@ docker compose -f deploy/docker/compose.yml up --build -d
 - `alembic upgrade head`
 - `python -m scripts.seed`
 - MinIO `public` 和 `private` bucket 初始化
+- `public` bucket 自动写入公开读策略，适用于头像和公开附件访问
 
 启动成功后默认访问地址：
 
@@ -50,7 +51,7 @@ docker compose -f deploy/docker/compose.yml up --build -d
 
 当前如果出现以下镜像拉取失败：
 
-- `python:3.12-slim`
+- `python:3.13-slim`
 - `node:24-alpine`
 - `nginx:alpine`
 
@@ -98,6 +99,14 @@ BACKEND_CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
 - 字典项和系统参数支持缓存、Excel 导入导出
 - 角色支持数据权限范围配置
 - 数据权限已接入用户列表、部门列表查询
+- 用户编辑接口支持更新 `department_id`
+- 用户创建接口对重名用户和软删除重名用户返回明确业务错误
+- 用户管理表单支持树形部门选择
+- 用户表单和密码重置失败时支持透传后端错误提示
+- 头像上传支持空文件名兜底，避免上传图片时出现 500
+- MinIO 公开 bucket 自动配置匿名读取策略，已上传头像可直接访问
+- 合同表单支持多附件选择并在保存后自动上传
+- 合同附件支持查看、下载和删除
 
 ## 当前联调结果
 
@@ -105,9 +114,11 @@ BACKEND_CORS_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
 - 默认管理员登录成功
 - 前端首页、登录后菜单和主要页面路由可正常访问
 - 关键页面依赖接口联调通过
+- 用户编辑、头像上传、合同附件上传链路已完成修复
 
 ## 当前运行约定
 
 - 数据表创建由 `Alembic` 负责
 - 应用启动不再执行 `create_all`
 - 种子数据通过 `python -m scripts.seed` 初始化
+- 本地开发后端请使用 `uvicorn main:app --reload ...`，避免 schema 变更后未热更新导致误判问题仍存在

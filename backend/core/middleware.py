@@ -48,20 +48,41 @@ async def operation_log_middleware(
         if not should_skip_logging:
             if os.getenv("SKIP_DB_INIT") != "1":
                 user = getattr(request.state, "current_user", None)
-                target = (
+                # 获取目标ID（支持多种常见的路径参数名）
+                target_id = (
                     request.path_params.get("user_id")
                     or request.path_params.get("role_id")
                     or request.path_params.get("permission_id")
                     or request.path_params.get("menu_id")
                     or request.path_params.get("file_id")
+                    or request.path_params.get("id")
+                    or request.path_params.get("company_id")
+                    or request.path_params.get("contract_id")
+                    or request.path_params.get("department_id")
+                    or request.path_params.get("dict_id")
+                    or request.path_params.get("dict_type_id")
+                    or request.path_params.get("dict_item_id")
+                    or request.path_params.get("config_id")
+                    or request.path_params.get("notification_id")
+                    or request.path_params.get("todo_id")
+                    or request.path_params.get("attachment_id")
                 )
+                
+                # 从路径提取资源类型，构建更有意义的操作描述
+                path_parts = [p for p in request.url.path.split("/") if p and p != "api" and p != "v1"]
+                resource = path_parts[0] if path_parts else "unknown"
+                action_name = f"{resource}.{request.method.lower()}"
+                
+                # 构建目标描述
+                target = f"{resource}:{target_id}" if target_id else resource
+                
                 try:
                     with SessionLocal() as db:
                         db.add(
                             OperationLog(
                                 user_id=getattr(user, "id", None),
                                 username=getattr(user, "username", None),
-                                action=f"request.{request.method.lower()}",
+                                action=action_name,
                                 target=target,
                                 detail={
                                     "path": request.url.path,

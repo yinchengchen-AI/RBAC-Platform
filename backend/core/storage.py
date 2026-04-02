@@ -1,3 +1,4 @@
+import json
 from io import BytesIO
 from uuid import uuid4
 
@@ -15,16 +16,29 @@ def get_minio_client() -> Minio:
     )
 
 
-def ensure_bucket(bucket_name: str) -> None:
+def ensure_bucket(bucket_name: str, is_public: bool = False) -> None:
     client = get_minio_client()
     if not client.bucket_exists(bucket_name):
         client.make_bucket(bucket_name)
+        if is_public:
+            policy = {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Principal": {"AWS": ["*"]},
+                        "Action": ["s3:GetObject"],
+                        "Resource": [f"arn:aws:s3:::{bucket_name}/*"],
+                    }
+                ],
+            }
+            client.set_bucket_policy(bucket_name, json.dumps(policy))
 
 
 def upload_public_file(
     filename: str, content: bytes, content_type: str
 ) -> tuple[str, str]:
-    ensure_bucket(settings.minio_public_bucket)
+    ensure_bucket(settings.minio_public_bucket, is_public=True)
     client = get_minio_client()
     object_name = f"uploads/{uuid4().hex}-{filename}"
     data = BytesIO(content)

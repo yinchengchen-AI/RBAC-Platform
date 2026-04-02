@@ -1,26 +1,28 @@
 import { Navigate, RouterProvider, createBrowserRouter } from 'react-router-dom'
 import { Spin } from 'antd'
 import { Suspense, lazy, useEffect, useMemo } from 'react'
-import type { RouteObject } from 'react-router-dom'
 import type { ReactNode } from 'react'
 
 import { hasRouteAccess } from '../access'
 import { DashboardLayout } from '../layouts/dashboard-layout'
 import { useAuthStore } from '../store/auth'
-import type { MenuItem } from '../types'
 
 const DashboardPage = lazy(() => import('../pages/dashboard').then((module) => ({ default: module.DashboardPage })))
+const TodosPage = lazy(() => import('../pages/todos'))
 const DepartmentsPage = lazy(() => import('../pages/departments').then((module) => ({ default: module.DepartmentsPage })))
 const DictsPage = lazy(() => import('../pages/dicts').then((module) => ({ default: module.DictsPage })))
 const ConfigsPage = lazy(() => import('../pages/configs').then((module) => ({ default: module.ConfigsPage })))
-const FilesPage = lazy(() => import('../pages/files').then((module) => ({ default: module.FilesPage })))
+const DocumentsPage = lazy(() => import('../pages/documents').then((module) => ({ default: module.DocumentsPage })))
 const LoginPage = lazy(() => import('../pages/login').then((module) => ({ default: module.LoginPage })))
 const LogsPage = lazy(() => import('../pages/logs').then((module) => ({ default: module.LogsPage })))
-const MenusPage = lazy(() => import('../pages/menus').then((module) => ({ default: module.MenusPage })))
 const PermissionsPage = lazy(() => import('../pages/permissions').then((module) => ({ default: module.PermissionsPage })))
 const ProfilePage = lazy(() => import('../pages/profile').then((module) => ({ default: module.ProfilePage })))
 const RolesPage = lazy(() => import('../pages/roles').then((module) => ({ default: module.RolesPage })))
 const UsersPage = lazy(() => import('../pages/users').then((module) => ({ default: module.UsersPage })))
+const CompaniesPage = lazy(() => import('../pages/companies').then((module) => ({ default: module.CompaniesPage })))
+const ContractsPage = lazy(() => import('../pages/contracts').then((module) => ({ default: module.ContractsPage })))
+const ServicesPage = lazy(() => import('../pages/services').then((module) => ({ default: module.ServicesPage })))
+const FinancePage = lazy(() => import('../pages/finance').then((module) => ({ default: module.FinancePage })))
 
 function PageLoader({ children }: { children: ReactNode }) {
   return (
@@ -34,34 +36,6 @@ function PageLoader({ children }: { children: ReactNode }) {
       {children}
     </Suspense>
   )
-}
-
-const routeComponentMap: Record<string, ReactNode> = {
-  '/dashboard': <PageLoader><DashboardPage /></PageLoader>,
-  '/departments': <PageLoader><DepartmentsPage /></PageLoader>,
-  '/dicts': <PageLoader><DictsPage /></PageLoader>,
-  '/configs': <PageLoader><ConfigsPage /></PageLoader>,
-  '/users': <PageLoader><UsersPage /></PageLoader>,
-  '/roles': <PageLoader><RolesPage /></PageLoader>,
-  '/permissions': <PageLoader><PermissionsPage /></PageLoader>,
-  '/menus': <PageLoader><MenusPage /></PageLoader>,
-  '/files': <PageLoader><FilesPage /></PageLoader>,
-  '/logs': <PageLoader><LogsPage /></PageLoader>,
-  '/profile': <PageLoader><ProfilePage /></PageLoader>,
-}
-
-function buildDynamicRoutes(menus: MenuItem[]): RouteObject[] {
-  const routePaths = Array.from(
-    new Set(
-      menus
-        .filter((menu) => menu.type === 'menu' && menu.route_path)
-        .map((menu) => menu.route_path as string),
-    ),
-  )
-
-  return routePaths
-    .filter((path) => routeComponentMap[path])
-    .map((path) => ({ path, element: routeComponentMap[path] }))
 }
 
 function ProtectedRoute() {
@@ -92,8 +66,6 @@ function ProtectedRoute() {
 }
 
 export function AppRouter() {
-  const currentUser = useAuthStore((state) => state.currentUser)
-
   const router = useMemo(
     () =>
       createBrowserRouter([
@@ -103,14 +75,26 @@ export function AppRouter() {
           element: <ProtectedRoute />,
           children: [
             { index: true, element: <Navigate to="/dashboard" replace /> },
-            ...buildDynamicRoutes(currentUser?.menus || []),
             { path: '/dashboard', element: <PageLoader><DashboardPage /></PageLoader> },
+            { path: '/todos', element: <PageLoader><TodosPage /></PageLoader> },
+            { path: '/departments', element: <PageLoader><DepartmentsPage /></PageLoader> },
+            { path: '/dicts', element: <PageLoader><DictsPage /></PageLoader> },
+            { path: '/configs', element: <PageLoader><ConfigsPage /></PageLoader> },
+            { path: '/users', element: <PageLoader><UsersPage /></PageLoader> },
+            { path: '/roles', element: <PageLoader><RolesPage /></PageLoader> },
+            { path: '/permissions', element: <PageLoader><PermissionsPage /></PageLoader> },
+            { path: '/documents', element: <PageLoader><DocumentsPage /></PageLoader> },
+            { path: '/logs', element: <PageLoader><LogsPage /></PageLoader> },
             { path: '/profile', element: <PageLoader><ProfilePage /></PageLoader> },
+            { path: '/companies', element: <PageLoader><CompaniesPage /></PageLoader> },
+            { path: '/contracts', element: <PageLoader><ContractsPage /></PageLoader> },
+            { path: '/services', element: <PageLoader><ServicesPage /></PageLoader> },
+            { path: '/finance', element: <PageLoader><FinancePage /></PageLoader> },
             { path: '*', element: <Navigate to="/dashboard" replace /> },
           ],
         },
       ]),
-    [currentUser?.menus],
+    [],
   )
 
   return <RouterProvider router={router} />

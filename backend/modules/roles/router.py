@@ -6,7 +6,6 @@ from core.deps import bind_current_user, permission_required
 from core.responses import success
 from db.session import get_db
 from models.data_scope import DataScopeRule
-from models.menu import Menu
 from models.permission import Permission
 from models.role import Role
 from models.user import User
@@ -27,10 +26,7 @@ def _build_role_payload(role: Role) -> dict:
             {"id": item.id, "code": item.code, "name": item.name}
             for item in role.permissions
         ],
-        "menus": [
-            {"id": item.id, "name": item.name, "route_path": item.route_path}
-            for item in role.menus
-        ],
+
         "data_scope_type": data_scope_rule.scope_type if data_scope_rule else "all",
         "data_scope_department_ids": data_scope_rule.department_ids.split(",")
         if data_scope_rule and data_scope_rule.department_ids
@@ -100,12 +96,7 @@ def create_role(
                 Permission.is_deleted.is_(False),
             )
         ).all()
-    if payload.menu_ids:
-        role.menus = db.scalars(
-            select(Menu).where(
-                Menu.id.in_(payload.menu_ids), Menu.is_deleted.is_(False)
-            )
-        ).all()
+
     db.add(role)
     db.flush()
     db.add(
@@ -148,15 +139,7 @@ def update_role(
         if payload.permission_ids
         else []
     )
-    role.menus = (
-        db.scalars(
-            select(Menu).where(
-                Menu.id.in_(payload.menu_ids), Menu.is_deleted.is_(False)
-            )
-        ).all()
-        if payload.menu_ids
-        else []
-    )
+
     rule = db.scalar(
         select(DataScopeRule).where(
             DataScopeRule.role_id == role.id, DataScopeRule.is_deleted.is_(False)

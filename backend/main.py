@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from core.logging import configure_logging
 from core.middleware import operation_log_middleware
+from core.scheduler import start_scheduler, shutdown_scheduler
 from db.init_db import init_db
 from modules.router import api_router
 
@@ -17,7 +18,9 @@ def create_app() -> FastAPI:
         configure_logging()
         if os.getenv("SKIP_DB_INIT") != "1":
             init_db()
+        start_scheduler()
         yield
+        shutdown_scheduler()
 
     application = FastAPI(
         title=settings.project_name,

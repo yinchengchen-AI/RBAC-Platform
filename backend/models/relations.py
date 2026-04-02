@@ -15,10 +15,3 @@ role_permission = Table(
     Column("role_id", ForeignKey("sys_role.id"), primary_key=True),
     Column("permission_id", ForeignKey("sys_permission.id"), primary_key=True),
 )
-
-role_menu = Table(
-    "sys_role_menu",
-    Base.metadata,
-    Column("role_id", ForeignKey("sys_role.id"), primary_key=True),
-    Column("menu_id", ForeignKey("sys_menu.id"), primary_key=True),
-)

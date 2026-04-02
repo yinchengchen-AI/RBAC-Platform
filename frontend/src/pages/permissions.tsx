@@ -1,9 +1,20 @@
-import { Button, Form, Input, Modal, Popconfirm, Space, Table, message } from 'antd'
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Button, Form, Input, Modal, Popconfirm, Space, Table, message, Avatar } from 'antd'
+import {
+  PlusOutlined,
+  ReloadOutlined,
+  SafetyOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons'
 import { useEffect, useState } from 'react'
 
 import { Permission } from '../access/permission'
-import { createPermissionApi, deletePermissionApi, fetchPermissionsApi, updatePermissionApi } from '../api/permissions'
+import {
+  createPermissionApi,
+  deletePermissionApi,
+  fetchPermissionsApi,
+  updatePermissionApi,
+} from '../api/permissions'
 import { PageTitle } from '../components/page-title'
 import type { PermissionItem } from '../types'
 
@@ -26,7 +37,10 @@ export function PermissionsPage() {
     setLoading(true)
     try {
       const response = await fetchPermissionsApi()
-      setData(response.data.data)
+      setData(response.data?.data || [])
+    } catch (error) {
+      message.error('加载数据失败')
+      console.error('loadData error:', error)
     } finally {
       setLoading(false)
     }
@@ -90,23 +104,46 @@ export function PermissionsPage() {
           </Space>
         }
       />
+
       <Table<PermissionItem>
         rowKey="id"
         loading={loading}
         dataSource={data}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total) => `共 ${total} 条`,
+        }}
         columns={[
-          { title: '权限编码', dataIndex: 'code' },
-          { title: '权限名称', dataIndex: 'name' },
+          {
+            title: '权限',
+            render: (_, record) => (
+              <Space>
+                <Avatar
+                  icon={<SafetyOutlined />}
+                  size="small"
+                  style={{ background: '#f0f0f0', color: '#595959' }}
+                />
+                <div>
+                  <div style={{ fontWeight: 500, color: '#1a1a1a' }}>{record.name}</div>
+                  <div style={{ fontSize: 12, color: '#8c8c8c' }}>{record.code}</div>
+                </div>
+              </Space>
+            ),
+          },
           { title: '所属模块', dataIndex: 'module', render: (value) => value || '-' },
           { title: '说明', dataIndex: 'description', render: (value) => value || '-' },
           {
             title: '操作',
             key: 'action',
+            width: 150,
             render: (_, record) => (
               <Space size="small">
                 <Permission permission="system:permission:update">
                   <Button
-                    type="link"
+                    type="text"
+                    size="small"
+                    icon={<EditOutlined />}
                     onClick={() => {
                       setEditingItem(record)
                       form.setFieldsValue(record)
@@ -116,16 +153,17 @@ export function PermissionsPage() {
                     编辑
                   </Button>
                 </Permission>
-                <Permission permission="system:permission:update">
+                <Permission permission="system:permission:delete">
                   <Popconfirm
                     title="确认删除该权限吗？"
+                    description="此操作不可恢复"
                     onConfirm={async () => {
                       await deletePermissionApi(record.id)
                       message.success('权限删除成功')
                       await loadData()
                     }}
                   >
-                    <Button type="link" danger>
+                    <Button type="text" danger size="small" icon={<DeleteOutlined />}>
                       删除
                     </Button>
                   </Popconfirm>
@@ -149,11 +187,19 @@ export function PermissionsPage() {
       >
         <Form form={form} layout="vertical">
           {!editingItem ? (
-            <Form.Item label="权限编码" name="code" rules={[{ required: true, message: '请输入权限编码' }]}>
+            <Form.Item
+              label="权限编码"
+              name="code"
+              rules={[{ required: true, message: '请输入权限编码' }]}
+            >
               <Input placeholder="例如：system:user:create" />
             </Form.Item>
           ) : null}
-          <Form.Item label="权限名称" name="name" rules={[{ required: true, message: '请输入权限名称' }]}>
+          <Form.Item
+            label="权限名称"
+            name="name"
+            rules={[{ required: true, message: '请输入权限名称' }]}
+          >
             <Input placeholder="请输入权限名称" />
           </Form.Item>
           <Form.Item label="所属模块" name="module">

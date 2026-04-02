@@ -9,7 +9,6 @@ export const createRoleApi = (payload: {
   description?: string
   status: number
   permission_ids: string[]
-  menu_ids: string[]
   data_scope_type: string
   data_scope_department_ids: string[]
 }) => request.post<ApiResponse<RoleItem>>('/roles', payload)
@@ -21,7 +20,6 @@ export const updateRoleApi = (
     description?: string
     status: number
     permission_ids: string[]
-    menu_ids: string[]
     data_scope_type: string
     data_scope_department_ids: string[]
   },

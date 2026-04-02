@@ -6,7 +6,7 @@ import { deleteFileApi, fetchFilesApi } from '../api/files'
 import { PageTitle } from '../components/page-title'
 import type { FileItem } from '../types'
 
-export function FilesPage() {
+export function DocumentsPage() {
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<FileItem[]>([])
 
@@ -14,7 +14,13 @@ export function FilesPage() {
     setLoading(true)
     try {
       const response = await fetchFilesApi()
-      setData(response.data.data)
+      console.log('文档管理 API 响应:', response.data)
+      // 确保数据是数组
+      const items = Array.isArray(response.data?.data) ? response.data.data : []
+      setData(items)
+    } catch (error) {
+      message.error('加载数据失败')
+      console.error('loadData error:', error)
     } finally {
       setLoading(false)
     }
@@ -27,21 +33,24 @@ export function FilesPage() {
   return (
     <div className="page-card">
       <PageTitle
-        title="文件管理"
-        description="文件统一存储到 MinIO，便于未来业务模块复用。"
+        title="文档管理"
+        description="文档统一存储到 MinIO，便于业务模块复用和管理。"
         extra={
           <Space>
             <Upload
-              action={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/files/upload`}
+              action="/api/v1/documents/upload"
               headers={{ Authorization: `Bearer ${localStorage.getItem('access_token') || ''}` }}
               showUploadList={false}
               onChange={(info) => {
+                console.log('Upload status:', info.file.status, info.file.response)
                 if (info.file.status === 'done') {
                   message.success('文件上传成功')
                   void loadData()
                 }
                 if (info.file.status === 'error') {
-                  message.error('文件上传失败')
+                  const errorMsg = info.file.response?.message || info.file.error?.message || '文件上传失败'
+                  message.error(errorMsg)
+                  console.error('Upload error:', info.file.response, info.file.error)
                 }
               }}
             >
@@ -55,7 +64,7 @@ export function FilesPage() {
       <Table<FileItem>
         rowKey="id"
         loading={loading}
-        dataSource={data}
+        dataSource={data || []}
         columns={[
           { title: '文件名', dataIndex: 'filename' },
           { title: '存储桶', dataIndex: 'bucket_name' },
