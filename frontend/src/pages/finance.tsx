@@ -1,6 +1,6 @@
 import { Button, Form, Input, Modal, Space, Table, Tabs, message, DatePicker, InputNumber, Select, Tag } from 'antd'
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Permission } from '../access/permission'
 import { fetchInvoicesApi, createInvoiceApi, fetchPaymentsApi, createPaymentApi, type InvoiceItem, type PaymentItem } from '../api/finance'
 import { fetchContractsApi, type ContractItem } from '../api/contracts'
@@ -21,6 +21,14 @@ const paymentMethodOptions = [
   { label: '微信支付', value: 'wechat_pay' },
 ]
 
+const taxRateOptions = [
+  { label: '免税', value: 0 },
+  { label: '3%', value: 0.03 },
+  { label: '6%', value: 0.06 },
+  { label: '9%', value: 0.09 },
+  { label: '13%', value: 0.13 },
+]
+
 export function FinancePage() {
   const [activeTab, setActiveTab] = useState('invoices')
   const [loading, setLoading] = useState(false)
@@ -31,6 +39,15 @@ export function FinancePage() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [invoiceForm] = Form.useForm()
   const [paymentForm] = Form.useForm()
+
+  const calculateTaxAmount = useCallback(() => {
+    const amount = invoiceForm.getFieldValue('amount')
+    const taxRate = invoiceForm.getFieldValue('tax_rate')
+    if (amount && taxRate !== undefined) {
+      const taxAmount = Number((amount * taxRate).toFixed(2))
+      invoiceForm.setFieldsValue({ tax_amount: taxAmount })
+    }
+  }, [invoiceForm])
 
   const loadInvoices = async () => {
     setLoading(true)
@@ -276,12 +293,30 @@ export function FinancePage() {
               name="amount"
               label="金额"
               rules={[{ required: true, message: '请输入金额' }]}
-              style={{ width: 280 }}
+              style={{ width: 180 }}
             >
-              <InputNumber style={{ width: '100%' }} min={0} precision={2} prefix="¥" />
+              <InputNumber 
+                style={{ width: '100%' }} 
+                min={0} 
+                precision={2} 
+                prefix="¥"
+                onChange={calculateTaxAmount}
+              />
             </Form.Item>
-            <Form.Item name="tax_amount" label="税额" style={{ width: 280 }}>
-              <InputNumber style={{ width: '100%' }} min={0} precision={2} prefix="¥" />
+            <Form.Item
+              name="tax_rate"
+              label="税率"
+              rules={[{ required: true, message: '请选择税率' }]}
+              initialValue={0.13}
+              style={{ width: 120 }}
+            >
+              <Select 
+                options={taxRateOptions}
+                onChange={calculateTaxAmount}
+              />
+            </Form.Item>
+            <Form.Item name="tax_amount" label="税额" style={{ width: 180 }}>
+              <InputNumber style={{ width: '100%' }} min={0} precision={2} prefix="¥" disabled />
             </Form.Item>
           </Space>
           <Form.Item

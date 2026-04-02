@@ -3,13 +3,13 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from db.base import Base
-from db.init_db import seed_system_data
+from db.init_db import PERMISSION_DEFINITIONS, seed_system_data
 from models.permission import Permission
 from models.role import Role
 from models.user import User
 
 
-def test_seed_system_data_backfills_system_delete_permissions(monkeypatch) -> None:
+def test_seed_system_data_backfills_all_defined_permissions(monkeypatch) -> None:
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -18,10 +18,17 @@ def test_seed_system_data_backfills_system_delete_permissions(monkeypatch) -> No
     SessionLocal = sessionmaker(bind=engine)
     Base.metadata.create_all(bind=engine)
 
-    delete_codes = {
+    defined_codes = {item["code"] for item in PERMISSION_DEFINITIONS}
+    backfill_codes = {
         "system:user:delete",
         "system:role:delete",
         "system:permission:delete",
+        "business:company:view",
+        "business:contract:create",
+        "business:service:view",
+        "business:document:view",
+        "business:invoice:create",
+        "business:payment:view",
     }
 
     with SessionLocal() as db:
@@ -52,12 +59,12 @@ def test_seed_system_data_backfills_system_delete_permissions(monkeypatch) -> No
 
     with SessionLocal() as db:
         permissions = db.scalars(
-            select(Permission).where(Permission.code.in_(delete_codes))
+            select(Permission).where(Permission.code.in_(defined_codes))
         ).all()
         codes = {item.code for item in permissions}
-        assert codes == delete_codes
+        assert defined_codes.issubset(codes)
 
         admin_role = db.scalar(select(Role).where(Role.code == "super_admin"))
         assert admin_role is not None
         role_codes = {item.code for item in admin_role.permissions}
-        assert delete_codes.issubset(role_codes)
+        assert backfill_codes.issubset(role_codes)
